@@ -6,13 +6,13 @@ If limit is not set, just converts the sizes to human-readable form.
 usage example
 --------
 When invoking fdupes, remember that -S key is a must, cause other way no sizes will
-be printed, and all this is useless
+be printed, and all that is useless. Here we create the log itself first, then
+processing it with fdups.py:
 
-$ fdupes -rS somepath > dups.log # 
+$ fdupes -rS somepath > dups.log
 $ fdups.py -i dups.log -l 100000
 
 Here we told fdups.py to read from dups.log, and filter out records less than 100000
 bytes. By default, output goes to dups.log.out, if it's not set explicitly.
 Detailed command line arguments information is in the help message, just run:
 $ fdups.py -h
-

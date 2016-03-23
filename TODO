@@ -1,0 +1,5 @@
+
+* stdin support, to let it go like:
+$ fdupes -rS somepath | fdups.py -l 65535
+
+? internally run fdupes, then process it's log and give the result to user
