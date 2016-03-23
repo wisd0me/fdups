@@ -28,25 +28,6 @@ def approximate_size(size, a_kilobyte_is_1024_bytes=True):
 
     raise ValueError('number too large')
 
-class FilesInOut:
-    '''
-    The Python with-statement can only be used with all object definitions on the same
-    line, which is not an option here - looks ugly as hell, thus this kludge :\
-    '''
-    def __init__(self, input, output, encoding):
-        self.input = input
-        self.output = output
-        self.enc = encoding
-
-    def __enter__(self):
-        self.file_in = open(self.input, mode='r', encoding=self.enc, errors='replace')
-        self.file_out = open(self.output, mode='w', encoding=self.enc)
-        return (self.file_in, self.file_out)
-
-    def __exit__(self, type, value, traceback):
-        self.file_in.close()
-        self.file_out.close()
-
 def process(args):
     '''
     Parses fdupes log, created with option -S, and converts file sizes in bytes
@@ -67,7 +48,8 @@ def process(args):
                 return
 
     filter_size = int(args.limit)
-    with FilesInOut(args.input, args.output, args.encoding) as (input, output):
+    with open(args.input, mode='r', encoding=args.encoding, errors='replace') as input, \
+         open(args.output, mode='w', encoding=args.encoding) as output:
         for line in input:
             if line.find(' bytes each:') ==  -1:
                 continue
