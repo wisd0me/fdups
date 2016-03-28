@@ -84,9 +84,10 @@ args = argp.parse_args()
 if (args.output == None):
     args.output = args.input + '.out'
 
-try:
-    process(args)
-except OSError as errno:
-    print("error: {}".format(errno))
-except:
-    print("Unexpected error:", sys.exc_info()[0])
+if __name__ == '__main__':
+    try:
+        process(args)
+    except OSError as errno:
+        print("error: {}".format(errno))
+    except:
+        print("Unexpected error:", sys.exc_info()[0])
