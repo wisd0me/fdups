@@ -28,7 +28,7 @@ def approximate_size(size, a_kilobyte_is_1024_bytes=True):
 
     raise ValueError('number too large')
 
-def process(args):
+def process(input, output, encoding, limit):
     '''
     Parses fdupes log, created with option -S, and converts file sizes in bytes
     into human readable sizes.
@@ -47,9 +47,9 @@ def process(args):
             if skipln == '\n':
                 return
 
-    filter_size = int(args.limit)
-    with open(args.input, mode='r', encoding=args.encoding, errors='replace') as input, \
-         open(args.output, mode='w', encoding=args.encoding) as output:
+    filter_size = int(limit)
+    with open(input, mode='r', encoding=encoding, errors='replace') as input, \
+         open(output, mode='w', encoding=encoding) as output:
         for line in input:
             if line.find(' bytes each:') ==  -1:
                 continue
@@ -79,14 +79,15 @@ argp.add_argument('-l', '--limit', dest='limit', default=0,
 argp.add_argument('-e', '--encoding', dest='encoding', default='utf8',
                   help='file encoding; by default, utf8 is used')
 
-args = argp.parse_args()
-
-if (args.output == None):
-    args.output = args.input + '.out'
 
 if __name__ == '__main__':
+    args = argp.parse_args()
+
+    if (args.output == None):
+        args.output = args.input + '.out'
+
     try:
-        process(args)
+        process(**dict(args._get_kwargs()))
     except OSError as errno:
         print("error: {}".format(errno))
     except:
