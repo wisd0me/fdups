@@ -2,12 +2,15 @@
 
 import sys
 import argparse
+import itertools
+import re
 
 SUFFIXES = {1000: ['KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
             1024: ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']}
 
 def approximate_size(size, a_kilobyte_is_1024_bytes=True):
-    '''Convert a file size to human-readable form.
+    '''
+    Convert a file size to human-readable form.
 
     Keyword arguments:
     size -- file size in bytes
@@ -28,6 +31,33 @@ def approximate_size(size, a_kilobyte_is_1024_bytes=True):
 
     raise ValueError('number too large')
 
+
+header = re.compile(r'^(\d+) bytes each:\n$')
+
+
+# box
+class Size:
+    __slots__ = 'value',
+    def __init__(self, value):
+        self.value = value
+
+
+def parser(lines):
+    lines = iter(lines)
+    while True:
+        # find header
+        line = next(lines)
+        match = header.match(line)
+        if not match:
+            continue
+        size = Size(int(match.group(1), 10))
+        # annotate each path with size
+        for path in lines:
+            if path == '\n':
+                break
+            yield (size, path)
+
+
 def process(input, output, encoding, limit):
     '''
     Parses fdupes log, created with option -S, and converts file sizes in bytes
@@ -42,30 +72,17 @@ def process(input, output, encoding, limit):
     ... and so on
 
     '''
-    def skip(file):
-        for skipln in file:
-            if skipln == '\n':
-                return
 
-    filter_size = int(limit)
     with open(input, mode='r', encoding=encoding, errors='replace') as input, \
          open(output, mode='w', encoding=encoding) as output:
-        for line in input:
-            if line.find(' bytes each:') ==  -1:
-                continue
+        for size, paths in itertools.groupby(parser(input), lambda x: x[0]):
+            dups_size = size.value
+            if dups_size >= limit: # output only records which size is sufficient
+                header = '%s each:\n' % approximate_size(dups_size)
+                output.write(header)
 
-            tokens = line.split(' ')
-            dups_size = int(tokens[0])
-            if dups_size >= filter_size: # output only records which size is sufficient
-                line = approximate_size(dups_size) + ' each:\n'
-                output.write(line)
-
-                for writeln in input:
-                    output.write(writeln)
-                    if writeln == '\n':
-                        break
-            else:
-                skip(input)
+                output.writelines(path for _, path in paths)
+                output.write('\n')
 
 
 # known arguments
@@ -74,7 +91,7 @@ argp.add_argument('-i', '--input', dest='input', required=True,
                   help='fdupes log input file; must be created with -S option')
 argp.add_argument('-o', '--output', dest='output',
                   help='output file; if omitted, \'.out\' suffix will be appended to input file name')
-argp.add_argument('-l', '--limit', dest='limit', default=0,
+argp.add_argument('-l', '--limit', dest='limit', type=int, default=0,
                   help='records with size less than given will be ignored')
 argp.add_argument('-e', '--encoding', dest='encoding', default='utf8',
                   help='file encoding; by default, utf8 is used')
@@ -86,9 +103,4 @@ if __name__ == '__main__':
     if (args.output == None):
         args.output = args.input + '.out'
 
-    try:
-        process(**dict(args._get_kwargs()))
-    except OSError as errno:
-        print("error: {}".format(errno))
-    except:
-        print("Unexpected error:", sys.exc_info()[0])
+    process(**dict(args._get_kwargs()))
